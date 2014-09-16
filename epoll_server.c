@@ -18,10 +18,6 @@ int create_epoll_fd(const char* port){
     int retcode, sfd;
     struct addrinfo hints, *result, *rp;
     memset(&hints, 0, sizeof(struct addrinfo));
-    /* ai_family:socket interface type:
-     *  AF_UNSPEC:any ipv4/6
-     *    AF_INET:ipv4
-     *   AF_INET6:ivp6*/
     hints.ai_family = AF_UNSPEC;
     hints.ai_socktype = SOCK_STREAM;
     hints.ai_flags = AI_PASSIVE;
