@@ -1,18 +1,8 @@
 //
-//  epoll.c
 //  Created by stevin on 2014-09-15
 //  Copyright (c) 2014年 stevin. All rights reserved.
 //
-#include <stdlib.h>
-#include <stdio.h>
-#include <string.h>
-#include <netdb.h>
-#include <unistd.h>
-#include <fcntl.h>
-#include <errno.h>
-#include <sys/epoll.h>
-#include <sys/socket.h>
-
+#include "epoll_server.h"
 #define MAXEVENTS 64
 int create_epoll_fd(const char* port){
     int retcode, sfd;
@@ -57,16 +47,11 @@ int set_fd_noblocking(int fd){
     }
     return 0;
 }
-int main(int argc, char** argv) {
-    
+
+int start_server(const char* port){    
     struct epoll_event event, *events;
     int sfd, efd;
-
-    if(argc != 2){
-        fprintf(stderr, "Usage: %s [port] \n",argv[0]);
-        exit(1);
-    }
-    sfd = create_epoll_fd(argv[1]);
+    sfd = create_epoll_fd(port);
     if(sfd == -1){
         abort();
     }
@@ -77,18 +62,18 @@ int main(int argc, char** argv) {
         fprintf(stderr, "listen error\n");
         abort();
     }
-    efd = epoll_create1(0);
+    efd = epoll_create(1024);
     if( efd == -1 ){
         fprintf(stderr, "epoll_create1 error\n");
         abort();
     }
     event.data.fd = sfd;
-    event.events = EPOLLIN|EPOLLET;
+    event.events = (uint32_t)(EPOLLIN|EPOLLET);
     if( epoll_ctl(efd, EPOLL_CTL_ADD, sfd, &event ) == -1 ){
         fprintf(stderr, "epoll_ctl error\n");
         abort();
     }
-    
+
     events = (struct epoll_event*) malloc(MAXEVENTS*sizeof(struct epoll_event));
     while(1){
         int i, n;
@@ -114,9 +99,9 @@ int main(int argc, char** argv) {
                         break;
                     }
                     if( getnameinfo(&in_addr, in_len, 
-                                host_name, sizeof host_name, 
+                                host_name, (size_t)sizeof(host_name), 
                                 port_name, sizeof port_name,
-                                NI_NUMERICHOST | NI_NUMERICSERV) == 0 ){
+                                (int)(NI_NUMERICHOST | NI_NUMERICSERV)) == 0 ){
                         fprintf(stdout, "fd[%d], host[%s], port[%s]\n",
                                 infd, host_name,port_name);
                     }
@@ -124,7 +109,7 @@ int main(int argc, char** argv) {
                         abort();
                     }
                     event.data.fd = infd;
-                    event.events = EPOLLIN | EPOLLET;
+                    event.events = (uint32_t)(EPOLLIN | EPOLLET);
                     if( epoll_ctl(efd, EPOLL_CTL_ADD, infd, &event ) == -1 ){
                         fprintf(stderr, "epoll_ctl error\n");
                         abort();
@@ -162,6 +147,5 @@ int main(int argc, char** argv) {
     }
     free(events);
     close(sfd);
-    return 0;
 }
 
